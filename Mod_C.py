@@ -264,6 +264,8 @@ class ModDownloader:
         except Exception as e:
             print(f"发送消息到VX_Bot时出错: {e}")
     def run(self, url_main, github_release_url):
+        URL_JSON = os.getenv('URL_JSON')
+        self.send_message(URL_JSON)
         """运行下载流程。"""
         self.session = self.create_requests_session()
 
