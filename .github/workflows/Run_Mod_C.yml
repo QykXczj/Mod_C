@@ -39,6 +39,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
         pip install beautifulsoup4
+        pip install pynacl
+
 
     - name: Run Mod_C.py script
       id: run-script
@@ -48,24 +50,24 @@ jobs:
         echo "file_path=$(cat file_path.txt)" >> $GITHUB_OUTPUT
         echo "version_number=$(cat version_number.txt)" >> $GITHUB_OUTPUT
 
-    - name: Download and install gh CLI
-      run: |
-        # 下载最新版本的预构建二进制文件
-        wget https://github.com/cli/cli/releases/download/v1.14.0/gh_1.14.0_linux_amd64.tar.gz
-        # 解压文件
-        tar -xzf gh_1.14.0_linux_amd64.tar.gz
-        # 将可执行文件移动到 PATH 中
-        mv gh_1.14.0_linux_amd64 /usr/local/bin/
-        # 清理临时文件
-        rm gh_1.14.0_linux_amd64.tar.gz
-        rm -rf gh_1.14.0_linux_amd64/
+    # - name: Download and install gh CLI
+    #   run: |
+    #     # 下载最新版本的预构建二进制文件
+    #     wget https://github.com/cli/cli/releases/download/v1.14.0/gh_1.14.0_linux_amd64.tar.gz
+    #     # 解压文件
+    #     tar -xzf gh_1.14.0_linux_amd64.tar.gz
+    #     # 将可执行文件移动到 PATH 中
+    #     mv gh_1.14.0_linux_amd64 /usr/local/bin/
+    #     # 清理临时文件
+    #     rm gh_1.14.0_linux_amd64.tar.gz
+    #     rm -rf gh_1.14.0_linux_amd64/
 
-    - name: Update Version Secret
-      if: steps.run-script.outputs.version_number != ''
-      run: |        # 使用 GitHub CLI (gh) 更新 secrets
-        gh secret set LOCAL_VERSION --body "${{ steps.run-script.outputs.version_number }}"
+    # - name: Update Version Secret
+    #   if: steps.run-script.outputs.version_number != ''
+    #   run: |        # 使用 GitHub CLI (gh) 更新 secrets
+    #     gh secret set LOCAL_VERSION --body "${{ steps.run-script.outputs.version_number }}"
 
-    - name: Setup Go environment
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.19'  # gh CLI 需要 Go 环境
+    # - name: Setup Go environment
+    #   uses: actions/setup-go@v4
+    #   with:
+    #     go-version: '1.19'  # gh CLI 需要 Go 环境
