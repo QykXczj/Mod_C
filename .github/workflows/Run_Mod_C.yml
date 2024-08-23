@@ -29,20 +29,21 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: Create accounts.json from environment variable
+      run: |
+        echo "$CONFIG_JSON" > config.json
+        echo "$URL_JSON" > url.json
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests
         pip install beautifulsoup4
 
-    - name: Create accounts.json from environment variable
-        run: echo "$CONFIG_JSON" > config.json
-        run: echo "$URL_JSON" > url.json
-
-    - name: Run 1.py script
+    - name: Run Mod_C.py script
       id: run-script
       run: |
-        python 1.py
+        python Mod_C.py
         # 输出文件路径和版本号
         echo "file_path=$(cat file_path.txt)" >> $GITHUB_OUTPUT
         echo "version_number=$(cat version_number.txt)" >> $GITHUB_OUTPUT
