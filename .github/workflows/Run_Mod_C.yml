@@ -17,6 +17,8 @@ jobs:
     env:
       LOCAL_VERSION: ${{ secrets.LOCAL_VERSION }}
       COOKIE: ${{ secrets.COOKIE }}
+      CONFIG_JSON: ${{ secrets.CONFIG_JSON }}  # 从GitHub Secrets中获取环境变量
+      URL_JSON: ${{ secrets.URL_JSON }}
     
     steps:
     - name: Checkout code
@@ -36,9 +38,6 @@ jobs:
     - name: Create accounts.json from environment variable
         run: echo "$CONFIG_JSON" > config.json
         run: echo "$URL_JSON" > url.json
-        env:
-            CONFIG_JSON: ${{ secrets.CONFIG_JSON }}  # 从GitHub Secrets中获取环境变量
-            URL_JSON: ${{ secrets.URL_JSON }}
 
     - name: Run 1.py script
       id: run-script
@@ -64,15 +63,6 @@ jobs:
       if: steps.run-script.outputs.version_number != ''
       run: |        # 使用 GitHub CLI (gh) 更新 secrets
         gh secret set LOCAL_VERSION --body "${{ steps.run-script.outputs.version_number }}"
-
-    - name: Upload to release
-      if: steps.run-script.outputs.file_path != ''
-      env:
-        FILE_PATH: ${{ steps.run-script.outputs.file_path }}
-        VERSION_NUMBER: ${{ steps.run-script.outputs.version_number }}
-      run: |
-        # 使用 GitHub CLI (gh) 上传文件
-        gh release create "v${VERSION_NUMBER}" "${FILE_PATH}" --title "Release v${VERSION_NUMBER}" --notes "New release."
 
     - name: Setup Go environment
       uses: actions/setup-go@v4
