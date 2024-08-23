@@ -264,8 +264,6 @@ class ModDownloader:
         except Exception as e:
             print(f"发送消息到VX_Bot时出错: {e}")
     def run(self, url_main, github_release_url):
-        URL_JSON = os.getenv('URL_JSON')
-        self.send_message(URL_JSON)
         """运行下载流程。"""
         self.session = self.create_requests_session()
 
@@ -293,14 +291,19 @@ class ModDownloader:
 
 if __name__ == "__main__":
     downloader = ModDownloader()
-    try:
-        with open('url.json', mode='r', encoding='utf-8') as f:
-            url_json = f.read()
-        urls = json.loads(url_json)
-        for url in urls:
-            url_main = url['URL_MAIN']
-            github_release_url = url['GITHUB_RELEASE_URL']
-            downloader.run(url_main, github_release_url)
-    except Exception as e:
-        print(f'读取 url.json 文件时出错: {e}')
-        exit(1)
+    URL_JSON = os.getenv('URL_JSON')
+    for urls in URL_JSON:
+        url_main = urls['URL_MAIN']
+        github_release_url = urls['GITHUB_RELEASE_URL']
+        downloader.run(url_main, github_release_url)
+    # try:
+    #     with open('url.json', mode='r', encoding='utf-8') as f:
+    #         url_json = f.read()
+    #     urls = json.loads(url_json)
+    #     for url in urls:
+    #         url_main = url['URL_MAIN']
+    #         github_release_url = url['GITHUB_RELEASE_URL']
+    #         downloader.run(url_main, github_release_url)
+    # except Exception as e:
+    #     print(f'读取 url.json 文件时出错: {e}')
+    #     exit(1)
