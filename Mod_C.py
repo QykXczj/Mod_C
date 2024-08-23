@@ -291,19 +291,14 @@ class ModDownloader:
 
 if __name__ == "__main__":
     downloader = ModDownloader()
-    URL_JSON = os.getenv('URL_JSON')
-    for urls in URL_JSON:
-        url_main = urls['URL_MAIN']
-        github_release_url = urls['GITHUB_RELEASE_URL']
-        downloader.run(url_main, github_release_url)
-    # try:
-    #     with open('url.json', mode='r', encoding='utf-8') as f:
-    #         url_json = f.read()
-    #     urls = json.loads(url_json)
-    #     for url in urls:
-    #         url_main = url['URL_MAIN']
-    #         github_release_url = url['GITHUB_RELEASE_URL']
-    #         downloader.run(url_main, github_release_url)
-    # except Exception as e:
-    #     print(f'读取 url.json 文件时出错: {e}')
-    #     exit(1)
+    try:
+        with open('url.json', mode='r', encoding='utf-8') as f:
+            url_json = f.read()
+        urls = json.loads(url_json)
+        for url in urls:
+            url_main = url['URL_MAIN']
+            github_release_url = url['GITHUB_RELEASE_URL']
+            downloader.run(url_main, github_release_url)
+    except Exception as e:
+        print(f'读取 url.json 文件时出错: {e}')
+        exit(1)
