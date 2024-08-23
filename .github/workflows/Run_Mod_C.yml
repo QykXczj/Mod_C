@@ -3,7 +3,7 @@ name: Run Mod_C.py Script
 on:
   # 触发条件：每隔5分钟执行一次
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/60 * * * *'
   # 允许手动触发
   workflow_dispatch:
   # 触发条件：当代码被推送到main分支时
