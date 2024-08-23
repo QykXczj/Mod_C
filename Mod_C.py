@@ -147,7 +147,7 @@ class ModDownloader:
                 exit(1)
             return False
 
-    def check_version_before_download(self, mod_title, version_number, github_release_url):
+    def check_version_before_download(self, mod_title, version_number, github_url):
 
         # 比较本地版本与目标版本
         if self.local_version != version_number:
@@ -156,7 +156,7 @@ class ModDownloader:
             return True
 
         """从 GitHub API 获取最新的发行版版本号。"""
-        url = f"{github_release_url}/latest"
+        url = f"{github_url}/releases/latest"
         headers = {'Authorization': f'token {GITHUB_PAT}'}
         try:
             response = requests.get(url, headers=headers)
@@ -186,9 +186,9 @@ class ModDownloader:
         self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
         return False
 
-    def create_github_release(self, version_number, file_path, github_release_url):
+    def create_github_release(self, version_number, file_path, github_url):
         """创建 GitHub 发行版并上传文件。"""
-        url = github_release_url
+        url = f"{github_url}/releases"
         headers = {
             'Authorization': f'token {GITHUB_PAT}',
             'Accept': 'application/vnd.github.v3+json'
@@ -222,11 +222,11 @@ class ModDownloader:
                     print(f"文件上传失败: {response.text}")
                     self.send_message(f"文件上传失败: {response.text}")
         elif response.status_code == 422:
-            print(f"{github_release_url}创建发行版失败: 已有相同的版本")
-            self.send_message(f"{github_release_url}文件上传失败: 已有相同的版本")
+            print(f"{url}创建发行版失败: 已有相同的版本")
+            self.send_message(f"{url}文件上传失败: 已有相同的版本")
         else:
-            print(f"{github_release_url}创建发行版失败: {response.text}")
-            self.send_message(f"{github_release_url}文件上传失败: {response.text}")
+            print(f"{url}创建发行版失败: {response.text}")
+            self.send_message(f"{url}文件上传失败: {response.text}")
 
     def send_message(self, message):
         self.send_telegram_message(message)
@@ -265,7 +265,7 @@ class ModDownloader:
                 print(f"发送消息到VX_BOT失败: {response.text}")
         except Exception as e:
             print(f"发送消息到VX_Bot时出错: {e}")
-    def run(self, url_main, github_release_url):
+    def run(self, url_main, github_url):
         """运行下载流程。"""
         self.session = self.create_requests_session()
 
@@ -276,7 +276,7 @@ class ModDownloader:
         print(f"文件 ID: {file_id}")
 
         # 检查版本
-        if self.check_version_before_download(mod_title, version_number, github_release_url):
+        if self.check_version_before_download(mod_title, version_number, github_url):
             # 生成下载 URL
             download_url = self.generate_download_url(file_id)
             print(f"下载链接: {download_url}")
@@ -286,7 +286,7 @@ class ModDownloader:
             if file_path:
                 print("下载并解压文件成功。")
                 # 创建 GitHub 发行版
-                self.create_github_release(version_number, file_path, github_release_url)
+                self.create_github_release(version_number, file_path, github_url)
 
         # 关闭会话
         self.session.close()
@@ -299,8 +299,8 @@ if __name__ == "__main__":
         urls = json.loads(url_json)
         for url in urls:
             url_main = url['URL_MAIN']
-            github_release_url = url['GITHUB_RELEASE_URL']
-            downloader.run(url_main, github_release_url)
+            github_url = url['GITHUB_URL']
+            downloader.run(url_main, github_url)
     except Exception as e:
         print(f'读取 url.json 文件时出错: {e}')
         exit(1)
