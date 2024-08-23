@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LOCAL_VERSION: ${{ secrets.LOCAL_VERSION }}
-      COOKIE: ${{ secrets.COOKIE }}
+      COOKIE: ${{ secrets.MOD_COOKIE }}
       CONFIG_JSON: ${{ secrets.CONFIG_JSON }}  # 从GitHub Secrets中获取环境变量
       URL_JSON: ${{ secrets.URL_JSON }}
     
