@@ -5,6 +5,10 @@ import zipfile
 import requests
 from bs4 import BeautifulSoup
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import base64
+import nacl.bindings
+import nacl.encoding
+import nacl.utils
 
 # 禁用安全请求警告
 LOCAL_PATH = ''
@@ -22,10 +26,8 @@ try:
 except Exception as e:
     print(f'读取 config.json 文件时出错: {e}')
     exit(1)
-MOD_COOKIE = '_ga=GA1.1.674045562.1724124670; _sharedid=f0b42fee-ae68-4251-ae88-4c76c6b7a63b; _sharedid_cst=zix7LPQsHA%3D%3D; usnatUUID=f4d97b89-cf5f-4415-8f8b-ff9a20dfaff6; cf_clearance=75ebhbmwfSPtfo4xVq3BgjuyrDLM7fd8lKr3Wg.mKM0-1724124673-1.2.1.1-XojlwwQNVe.PDgIYC9754x39PJcWSwtWh2jEzDS1ZskeE6zZkjYg7K8bifu3a0Eke2G4PJPEPoRr6xxzqO_ZXMjApXrLdQA.zAR9WhoOEvF9wSSk5hrsNveCPLHUReRnajhNNS6xUJSgAe1_ev2ptYXjvK41tT0FEnE2BjRosMmELKDQ.8Gb84ThjFpqASwZDPqPC.BPb4Qjy7rCMEWRXMPEKDTA1squMxc7XkeUR1U8DtDcIc8MCz58fPRJHOfIdCC643jGU_rua4JRM6LUUejk_fz0iKX4.c3hfFdtxZodqiWwRtHKXL53iTagTtc.nO0dUSc_wh72w0hFFbsU3IkhJ3fVQhGdBeD1LGGH3wA5hNQP1zPZN.lSmEKT_kfYjNl8ifeUsnEwh1p3V0yyrg; nexusmods_session=dc5924375f596cbd7ea14ed3477721d0; nexusmods_session_refresh=1724124850; _ga_N0TELNQ37M=GS1.1.1724171856.2.0.1724171856.0.0.0; _ga_0CPE0JFSCT=GS1.1.1724171856.2.0.1724171856.0.0.0'
-LOCAL_VERSION = '1.8.4'
-# MOD_COOKIE = os.getenv('MOD_COOKIE')
-# LOCAL_VERSION = os.getenv('LOCAL_VERSION')
+MOD_COOKIE = os.getenv('MOD_COOKIE')
+LOCAL_VERSION = os.getenv('LOCAL_VERSION')
 
 class ModDownloader:
     def __init__(self):
@@ -228,6 +230,57 @@ class ModDownloader:
             print(f"{url}创建发行版失败: {response.text}")
             self.send_message(f"{url}文件上传失败: {response.text}")
 
+    def update_local_version(self, version_number, github_url):
+        url = f"{github_url}/actions/secrets/LOCAL_VERSION"
+        key_url = f"{github_url}/actions/secrets/public-key"
+
+        # 设置请求头
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"Bearer {GITHUB_PAT}",
+        }
+
+        # 获取公钥
+        response_key = requests.get(key_url, headers=headers)
+        print(response_key.json())
+
+        if response_key.status_code == 200:
+            key_data = response_key.json()
+            key = key_data["key"]
+            key_id = key_data["key_id"]
+
+            # 解码Base64编码的公钥
+            public_key_bytes = base64.b64decode(key)
+
+            # 使用Libsodium加密
+            nonce = nacl.utils.random(nacl.bindings.crypto_box_NONCEBYTES)
+            encrypted_value = nacl.bindings.crypto_box_seal(
+                version_number.encode(),
+                public_key_bytes
+            )
+
+            # 设置请求体
+            data = {
+                "encrypted_value": base64.b64encode(encrypted_value).decode(),
+                "key_id": key_id
+            }
+
+            # 发送PUT请求
+            response = requests.put(url, headers=headers, data=json.dumps(data))
+
+            # 检查响应状态码
+            if response.status_code == 204:
+                print("Secret updated successfully.")
+                self.send_message(f"更新{url}成功")
+            else:
+                print(f"Failed to update secret. Status code: {response.status_code}")
+                self.send_message(f"更新{url}失败:{response.status_code}")
+                print(response.text)
+        else:
+            print(f"Failed to fetch public key. Status code: {response_key.status_code}")
+            self.send_message(f"更新{url}失败:{response_key.status_code}")
+            print(response_key.text)
+
     def send_message(self, message):
         self.send_telegram_message(message)
         self.send_VX_Bot_message(message)
@@ -287,6 +340,9 @@ class ModDownloader:
                 print("下载并解压文件成功。")
                 # 创建 GitHub 发行版
                 self.create_github_release(version_number, file_path, github_url)
+                if self.local_version != version_number:
+                    # 更新机密locaol_version
+                    self.update_local_version(version_number, github_url)
 
         # 关闭会话
         self.session.close()
