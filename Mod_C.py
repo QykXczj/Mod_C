@@ -166,7 +166,7 @@ class ModDownloader:
                 latest_release = response.json()
                 if any(isinstance(value, str) and version_number in value for value in latest_release.values()):
                     print(f"{mod_title}当前版本已是最新，无需重新下载了。")
-                    self.send_message(f"{mod_title}当前版本已是最新，无需重新下载了。")
+                    # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载了。")
                     return False
                 print(f"{mod_title}发行版发现新版本{version_number}，开始下载。")
                 self.send_message(f"{mod_title}发行版发现新版本{version_number}，开始下载。")
@@ -185,7 +185,7 @@ class ModDownloader:
                 return False
 
         print(f"{mod_title}当前版本已是最新，无需重新下载。~")
-        self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
+        # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
         return False
 
     def create_github_release(self, version_number, file_path, github_url):
