@@ -151,12 +151,13 @@ class ModDownloader:
 
         """从 GitHub API 获取最新的发行版版本号。"""
         url = f"{github_url}/releases"
-        headers = {'Authorization': f'token {GITHUB_PAT}'}
+        headers = {'Authorization': f'Bearer {GITHUB_PAT}',
+                  "Accept": "application/vnd.github+json"}
         try:
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
-                latest_release = response.json()
-                if any(isinstance(value, str) and mod_info in value for value in latest_release.values()):
+                releases = response.json()
+                if any(isinstance(value, str) and mod_info in value for value in releases.values()):
                     print(f"{mod_title}当前版本已是最新，无需重新下载了。")
                     # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载了。")
                     return False
