@@ -158,11 +158,11 @@ class ModDownloader:
             if response.status_code == 200:
                 releases = response.json()
                 if any(isinstance(value, str) and mod_info in value for value in releases.values()):
-                    print(f"{mod_title}当前版本已是最新，无需重新下载了。")
-                    # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载了。")
+                    print(f"{mod_info}当前版本已是最新，无需重新下载了。")
+                    # self.send_message(f"{mod_info}当前版本已是最新，无需重新下载了。")
                     return False
-                print(f"{mod_title}发行版发现新版本{version_number}，开始下载。")
-                self.send_message(f"{mod_title}发行版发现新版本{version_number}，开始下载。")
+                print(f"{mod_info}发行版发现新版本，开始下载。")
+                self.send_message(f"{mod_info}发行版发现新版本，开始下载。")
                 return True
             elif response.status_code == 401:
                 print("github密钥已失效,前往https://github.com/settings/personal-access-tokens/new重新获取")
