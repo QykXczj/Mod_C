@@ -104,13 +104,13 @@ class ModDownloader:
             self.send_message(f"Cookie已失效,请求发生错误,前往https://www.nexusmods.com/eldenring/mods/510?tab=files")
             exit(1)
 
-    def download_and_extract_file(self, download_url, mod_title, version_number):
+    def download_and_extract_file(self, download_url, mod_info):
         """下载文件并解压。"""
         if download_url:
             try:
                 file_response = self.session.get(download_url, stream=True)
                 file_response.raise_for_status()
-                file_name = f"{mod_title}_v{version_number}.zip"
+                file_name = f"{mod_info}.zip"
                 save_path = os.path.join(self.local_path, file_name)
                 with open(save_path, 'wb') as file:
                     for chunk in file_response.iter_content(chunk_size=65536):
@@ -120,7 +120,7 @@ class ModDownloader:
                 self.send_message("文件下载完成")
 
                 # 解压文件
-                extract_path = os.path.join(self.local_path, f"{mod_title}_v{version_number}")
+                extract_path = os.path.join(self.local_path, f"{mod_info}")
                 with zipfile.ZipFile(save_path, 'r') as zip_ref:
                     zip_ref.extractall(extract_path)
 
@@ -133,8 +133,6 @@ class ModDownloader:
                     # 将文件路径和版本号写入文本文件
                     with open("file_path.txt", "w") as file:
                         file.write(save_path)
-                    with open("version_number.txt", "w") as file:
-                        file.write(version_number)
                     # 删除解压后的文件
                     shutil.rmtree(extract_path)
                     print(f"解压后的文件已被删除。")
@@ -149,22 +147,16 @@ class ModDownloader:
                 exit(1)
             return False
 
-    def check_version_before_download(self, mod_title, version_number, github_url):
-
-        # 比较本地版本与目标版本
-        if self.local_version != version_number:
-            print(f"{mod_title}发现新版本{version_number}，开始下载。")
-            self.send_message(f"{mod_title}发现新版本{version_number}，开始下载。")
-            return True
+    def check_version_before_download(self, mod_info, github_url):
 
         """从 GitHub API 获取最新的发行版版本号。"""
-        url = f"{github_url}/releases/latest"
+        url = f"{github_url}/releases"
         headers = {'Authorization': f'token {GITHUB_PAT}'}
         try:
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 latest_release = response.json()
-                if any(isinstance(value, str) and version_number in value for value in latest_release.values()):
+                if any(isinstance(value, str) and mod_info in value for value in latest_release.values()):
                     print(f"{mod_title}当前版本已是最新，无需重新下载了。")
                     # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载了。")
                     return False
@@ -188,7 +180,7 @@ class ModDownloader:
         # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
         return False
 
-    def create_github_release(self, version_number, file_path, github_url):
+    def create_github_release(self, mod_info, file_path, github_url):
         """创建 GitHub 发行版并上传文件。"""
         url = f"{github_url}/releases"
         headers = {
@@ -196,9 +188,9 @@ class ModDownloader:
             'Accept': 'application/vnd.github.v3+json'
         }
         release_payload = {
-            "tag_name": f"v{version_number}",
+            "tag_name": mod_info,
             "target_commitish": "main",
-            "name": f"Release v{version_number}",
+            "name": mod_info,
             "body": "New version of the mod.",
             "draft": False,
             "prerelease": False
@@ -229,57 +221,6 @@ class ModDownloader:
         else:
             print(f"{url}创建发行版失败: {response.text}")
             self.send_message(f"{url}文件上传失败: {response.text}")
-
-    def update_local_version(self, version_number, github_url):
-        url = f"{github_url}/actions/secrets/LOCAL_VERSION"
-        key_url = f"{github_url}/actions/secrets/public-key"
-
-        # 设置请求头
-        headers = {
-            "Accept": "application/vnd.github.v3+json",
-            "Authorization": f"Bearer {GITHUB_PAT}",
-        }
-
-        # 获取公钥
-        response_key = requests.get(key_url, headers=headers)
-        print(response_key.json())
-
-        if response_key.status_code == 200:
-            key_data = response_key.json()
-            key = key_data["key"]
-            key_id = key_data["key_id"]
-
-            # 解码Base64编码的公钥
-            public_key_bytes = base64.b64decode(key)
-
-            # 使用Libsodium加密
-            nonce = nacl.utils.random(nacl.bindings.crypto_box_NONCEBYTES)
-            encrypted_value = nacl.bindings.crypto_box_seal(
-                version_number.encode(),
-                public_key_bytes
-            )
-
-            # 设置请求体
-            data = {
-                "encrypted_value": base64.b64encode(encrypted_value).decode(),
-                "key_id": key_id
-            }
-
-            # 发送PUT请求
-            response = requests.put(url, headers=headers, data=json.dumps(data))
-
-            # 检查响应状态码
-            if response.status_code == 204:
-                print("Secret updated successfully.")
-                self.send_message(f"更新{url}成功")
-            else:
-                print(f"Failed to update secret. Status code: {response.status_code}")
-                self.send_message(f"更新{url}失败:{response.status_code}")
-                print(response.text)
-        else:
-            print(f"Failed to fetch public key. Status code: {response_key.status_code}")
-            self.send_message(f"更新{url}失败:{response_key.status_code}")
-            print(response_key.text)
 
     def send_message(self, message):
         self.send_telegram_message(message)
@@ -327,22 +268,20 @@ class ModDownloader:
         print(f"模组标题: {mod_title}")
         print(f"模组版本号: {version_number}")
         print(f"文件 ID: {file_id}")
+        mod_info = f"{mod_title}_v{version_number}"
 
         # 检查版本
-        if self.check_version_before_download(mod_title, version_number, github_url):
+        if self.check_version_before_download(mod_info, github_url):
             # 生成下载 URL
             download_url = self.generate_download_url(file_id)
             print(f"下载链接: {download_url}")
 
             # 下载并解压文件
-            file_path = self.download_and_extract_file(download_url, mod_title, version_number)
+            file_path = self.download_and_extract_file(download_url, mod_info)
             if file_path:
                 print("下载并解压文件成功。")
                 # 创建 GitHub 发行版
-                self.create_github_release(version_number, file_path, github_url)
-                if self.local_version != version_number:
-                    # 更新机密locaol_version
-                    self.update_local_version(version_number, github_url)
+                self.create_github_release(mod_info, file_path, github_url)
 
         # 关闭会话
         self.session.close()
