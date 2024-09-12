@@ -23,6 +23,7 @@ try:
     VX_BOT_KEY = configs['VX_BOT_KEY']
     GITHUB_PAT = configs['GITHUB_PAT']
     DOWNLOAD_URL_MAIN = configs['DOWNLOAD_URL_MAIN']
+    GITHUB_URL = configs['GITHUB_URL']
 except Exception as e:
     print(f'读取 config.json 文件时出错: {e}')
     exit(1)
@@ -147,10 +148,10 @@ class ModDownloader:
                 exit(1)
             return False
 
-    def check_version_before_download(self, mod_info, github_url):
+    def check_version_before_download(self, mod_info):
 
         """从 GitHub API 获取最新的发行版版本号。"""
-        url = f"{github_url}/releases"
+        url = f"{GITHUB_URL}/releases"
         headers = {'Authorization': f'token {GITHUB_PAT}'}
         try:
             response = requests.get(url, headers=headers)
@@ -180,9 +181,9 @@ class ModDownloader:
         # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
         return False
 
-    def create_github_release(self, mod_info, file_path, github_url):
+    def create_github_release(self, mod_info, file_path):
         """创建 GitHub 发行版并上传文件。"""
-        url = f"{github_url}/releases"
+        url = f"{GITHUB_URL}/releases"
         headers = {
             'Authorization': f'token {GITHUB_PAT}',
             'Accept': 'application/vnd.github.v3+json'
@@ -259,7 +260,7 @@ class ModDownloader:
                 print(f"发送消息到VX_BOT失败: {response.text}")
         except Exception as e:
             print(f"发送消息到VX_Bot时出错: {e}")
-    def run(self, url_main, github_url):
+    def run(self, url_main):
         """运行下载流程。"""
         self.session = self.create_requests_session()
 
@@ -271,7 +272,7 @@ class ModDownloader:
         mod_info = f"{mod_title}_v{version_number}"
 
         # 检查版本
-        if self.check_version_before_download(mod_info, github_url):
+        if self.check_version_before_download(mod_info):
             # 生成下载 URL
             download_url = self.generate_download_url(file_id)
             print(f"下载链接: {download_url}")
@@ -281,7 +282,7 @@ class ModDownloader:
             if file_path:
                 print("下载并解压文件成功。")
                 # 创建 GitHub 发行版
-                self.create_github_release(mod_info, file_path, github_url)
+                self.create_github_release(mod_info, file_path)
 
         # 关闭会话
         self.session.close()
@@ -294,8 +295,7 @@ if __name__ == "__main__":
         urls = json.loads(url_json)
         for url in urls:
             url_main = url['URL_MAIN']
-            github_url = url['GITHUB_URL']
-            downloader.run(url_main, github_url)
+            downloader.run(url_main)
     except Exception as e:
         print(f'读取 url.json 文件时出错: {e}')
         exit(1)
