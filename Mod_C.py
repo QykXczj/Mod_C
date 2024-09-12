@@ -151,10 +151,7 @@ class ModDownloader:
 
         """从 GitHub API 获取最新的发行版版本号。"""
         url = f"{github_url}/releases"
-        headers = {
-                "Authorization": f"token {GITHUB_PAT}",
-                "Accept": "application/vnd.github+json"
-                }
+        headers = {'Authorization': f'token {GITHUB_PAT}'}
         try:
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
