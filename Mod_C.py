@@ -157,10 +157,16 @@ class ModDownloader:
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 releases = response.json()
-                if any(isinstance(value, str) and mod_info in value for value in releases.values()):
-                    print(f"{mod_info}当前版本已是最新，无需重新下载了。")
-                    # self.send_message(f"{mod_info}当前版本已是最新，无需重新下载了。")
-                    return False
+                if not releases:
+                    print(f"{mod_info}项目仓库发行版未建立，开始下载。")
+                    self.send_message(f"{mod_info}项目仓库发行版未建立，开始下载。")
+                    return True
+                # 遍历每个发行版
+                for release in releases:
+                    if isinstance(release, dict) and mod_info in release.get('name', ''):
+                        print(f"{mod_info}当前版本已是最新，无需重新下载了。")
+                        # self.send_message(f"{mod_info}当前版本已是最新，无需重新下载了。")
+                        return False
                 print(f"{mod_info}发行版发现新版本，开始下载。")
                 self.send_message(f"{mod_info}发行版发现新版本，开始下载。")
                 return True
@@ -168,14 +174,20 @@ class ModDownloader:
                 print("github密钥已失效,前往https://github.com/settings/personal-access-tokens/new重新获取")
                 self.send_message("github密钥已失效,前往https://github.com/settings/personal-access-tokens/new重新获取")
                 return False
-            else:
-                print(f"{url}项目仓库发行版未建立，开始下载。")
-                self.send_message(f"{url}项目仓库发行版未建立，开始下载。")
-                return True
-        except Exception as e:
-                print(f"{url}仓库项目已不再: {e}")
-                self.send_message(f"{url}仓库项目已不再: {e}")
+            elif response.status_code == 404:
+                print(f"{mod_info}项目仓库不存在或没有权限访问。")
+                self.send_message(f"{mod_info}项目仓库不存在或没有权限访问。")
                 return False
+            else:
+                print(f"{mod_info}请求失败，状态码: {response.status_code}")
+                self.send_message(f"{mod_info}请求失败，状态码: {response.status_code}")
+                print(f"错误信息: {response.text}")
+                self.send_message(f"错误信息: {response.text}")
+                return False
+        except requests.exceptions.RequestException as e:
+            print(f"{mod_info}仓库项目已不再: {e}")
+            self.send_message(f"{mod_info}仓库项目已不再: {e}")
+            return False
 
         print(f"{mod_title}当前版本已是最新，无需重新下载。~")
         # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
