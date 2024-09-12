@@ -26,10 +26,8 @@ try:
 except Exception as e:
     print(f'读取 config.json 文件时出错: {e}')
     exit(1)
-MOD_COOKIE = '_ga=GA1.1.674045562.1724124670; _sharedid=f0b42fee-ae68-4251-ae88-4c76c6b7a63b; _sharedid_cst=zix7LPQsHA%3D%3D; usnatUUID=f4d97b89-cf5f-4415-8f8b-ff9a20dfaff6; cf_clearance=75ebhbmwfSPtfo4xVq3BgjuyrDLM7fd8lKr3Wg.mKM0-1724124673-1.2.1.1-XojlwwQNVe.PDgIYC9754x39PJcWSwtWh2jEzDS1ZskeE6zZkjYg7K8bifu3a0Eke2G4PJPEPoRr6xxzqO_ZXMjApXrLdQA.zAR9WhoOEvF9wSSk5hrsNveCPLHUReRnajhNNS6xUJSgAe1_ev2ptYXjvK41tT0FEnE2BjRosMmELKDQ.8Gb84ThjFpqASwZDPqPC.BPb4Qjy7rCMEWRXMPEKDTA1squMxc7XkeUR1U8DtDcIc8MCz58fPRJHOfIdCC643jGU_rua4JRM6LUUejk_fz0iKX4.c3hfFdtxZodqiWwRtHKXL53iTagTtc.nO0dUSc_wh72w0hFFbsU3IkhJ3fVQhGdBeD1LGGH3wA5hNQP1zPZN.lSmEKT_kfYjNl8ifeUsnEwh1p3V0yyrg; nexusmods_session=dc5924375f596cbd7ea14ed3477721d0; nexusmods_session_refresh=1724124850; _ga_N0TELNQ37M=GS1.1.1724171856.2.0.1724171856.0.0.0; _ga_0CPE0JFSCT=GS1.1.1724171856.2.0.1724171856.0.0.0'
-LOCAL_VERSION = '1.8.3'
-# MOD_COOKIE = os.getenv('MOD_COOKIE')
-# LOCAL_VERSION = os.getenv('LOCAL_VERSION')
+MOD_COOKIE = os.getenv('MOD_COOKIE')
+LOCAL_VERSION = os.getenv('LOCAL_VERSION')
 
 class ModDownloader:
     def __init__(self):
