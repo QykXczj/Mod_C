@@ -261,7 +261,7 @@ class ModDownloader:
             "tag_name": mod_info,
             "target_commitish": "main",
             "name": mod_info,
-            "body": f"{game_name} New version of the mod.",
+            "body": f"{game_name}:_New version of the mod.",
             "draft": False,
             "prerelease": False
         }
