@@ -69,30 +69,30 @@ class ModDownloader:
             self.send_message(f"获取mod信息出错:{e}")
             exit(1)
 
-        def get_mod_fliename(self, url):
-            try:
-                # 发送GET请求
-                response = requests.get(url)
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, 'html.parser')
-                    # 查找包含压缩包名称的div元素
-                    header_div = soup.find('div', class_='header')
-                    if header_div:
-                        text = header_div.text.strip()
-                        # 使用正则表达式匹配括号前面的字符
-                        match = re.search(r'^(.*?)(\s*\(.+\))', text)
-                        if match:
-                            zip_name = match.group(1).strip()
-                            print(f"压缩包名称: {zip_name}")
-                            return zip_name
-                        else:
-                            print("未找到压缩包名称")
-                else:
-                    print(f"请求失败，状态码: {response.status_code}")
-            except requests.RequestException as e:
-                print(f"请求过程中发生错误: {e}")
-                self.send_message(f"获取压缩包名称出错:{e}")
-                exit(1)
+    def get_mod_fliename(self, url):
+        try:
+            # 发送GET请求
+            response = requests.get(url)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                # 查找包含压缩包名称的div元素
+                header_div = soup.find('div', class_='header')
+                if header_div:
+                    text = header_div.text.strip()
+                    # 使用正则表达式匹配括号前面的字符
+                    match = re.search(r'^(.*?)(\s*\(.+\))', text)
+                    if match:
+                        zip_name = match.group(1).strip()
+                        print(f"压缩包名称: {zip_name}")
+                        return zip_name
+                    else:
+                        print("未找到压缩包名称")
+            else:
+                print(f"请求失败，状态码: {response.status_code}")
+        except requests.RequestException as e:
+            print(f"请求过程中发生错误: {e}")
+            self.send_message(f"获取压缩包名称出错:{e}")
+            exit(1)
 
     def generate_download_url(self, file_id):
         """生成下载 URL。"""
