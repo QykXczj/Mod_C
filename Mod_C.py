@@ -250,7 +250,7 @@ class ModDownloader:
         # self.send_message(f"{mod_title}当前版本已是最新，无需重新下载。~")
         return False
 
-    def create_github_release(self, mod_info, file_path):
+    def create_github_release(self, mod_info, file_path, game_name):
         """创建 GitHub 发行版并上传文件。"""
         url = f"{GITHUB_URL}/releases"
         headers = {
