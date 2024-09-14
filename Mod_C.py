@@ -63,7 +63,15 @@ class ModDownloader:
             version_number = version_meta['content'] if version_meta else None
             file_element = soup.find('dt', class_='file-expander-header clearfix accopen')
             file_id = file_element.get('data-id') if file_element else None
-            return mod_title, version_number, file_id
+            script_tags = soup.find_all('script')
+            for tag in script_tags:
+                # 检查 tag 是否有 string 属性
+                if tag.string:
+                    if 'window.current_game_id' in tag.string:
+                        # 获取 game_id 的值
+                        game_id_str = tag.string[tag.string.index('window.current_game_id'):]
+                        game_id = int(game_id_str.split('=')[1].strip().split(';')[0])
+            return mod_title, version_number, file_id, game_id
         except requests.RequestException as e:
             print(f"请求过程中发生错误: {e}")
             self.send_message(f"获取mod信息出错:{e}")
@@ -94,7 +102,7 @@ class ModDownloader:
             self.send_message(f"获取压缩包名称出错:{e}")
             exit(1)
 
-    def generate_download_url(self, file_id):
+    def generate_download_url(self, file_id, game_id):
         """生成下载 URL。"""
         url = DOWNLOAD_URL_MAIN
         headers = {
@@ -115,7 +123,7 @@ class ModDownloader:
         }
         data = {
             'fid': file_id,
-            'game_id': '4333',
+            'game_id': game_id,
         }
         try:
             response = self.session.post(url, data=data, headers=headers)
@@ -324,10 +332,11 @@ class ModDownloader:
         self.session = self.create_requests_session()
 
         # 获取网页内容并解析 HTML
-        mod_title, version_number, file_id = self.fetch_webpage_and_parse_html(url_main)
+        mod_title, version_number, file_id, game_id = self.fetch_webpage_and_parse_html(url_main)
         print(f"模组标题: {mod_title}")
         print(f"模组版本号: {version_number}")
         print(f"文件 ID: {file_id}")
+        print(f"游戏 ID: {game_id}")
         mod_info = f"{mod_title}_v{version_number}"
         url_fliename = f"{url_main}&file_id={file_id}"
         mod_fliename = self.get_mod_fliename(url_fliename)
@@ -335,7 +344,7 @@ class ModDownloader:
         # 检查版本
         if self.check_version_before_download(mod_info):
             # 生成下载 URL
-            download_url = self.generate_download_url(file_id)
+            download_url = self.generate_download_url(file_id, game_id)
             print(f"下载链接: {download_url}")
 
             # 下载并解压文件
