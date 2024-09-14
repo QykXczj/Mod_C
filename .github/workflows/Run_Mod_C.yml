@@ -40,7 +40,8 @@ jobs:
         pip install requests
         pip install beautifulsoup4
         pip install pynacl
-
+        pip install pyunpack patool
+        pip install py7zr
 
     - name: Run Mod_C.py script
       id: run-script
