@@ -6,6 +6,9 @@ import requests
 from bs4 import BeautifulSoup
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import base64
+import re
+import pyunpack
+import py7zr
 import nacl.bindings
 import nacl.encoding
 import nacl.utils
@@ -66,6 +69,31 @@ class ModDownloader:
             self.send_message(f"获取mod信息出错:{e}")
             exit(1)
 
+        def get_mod_fliename(self, url):
+        try:
+            # 发送GET请求
+            response = requests.get(url)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                # 查找包含压缩包名称的div元素
+                header_div = soup.find('div', class_='header')
+                if header_div:
+                    text = header_div.text.strip()
+                    # 使用正则表达式匹配括号前面的字符
+                    match = re.search(r'^(.*?)(\s*\(.+\))', text)
+                    if match:
+                        zip_name = match.group(1).strip()
+                        print(f"压缩包名称: {zip_name}")
+                        return zip_name
+                    else:
+                        print("未找到压缩包名称")
+            else:
+                print(f"请求失败，状态码: {response.status_code}")
+        except requests.RequestException as e:
+            print(f"请求过程中发生错误: {e}")
+            self.send_message(f"获取压缩包名称出错:{e}")
+            exit(1)
+
     def generate_download_url(self, file_id):
         """生成下载 URL。"""
         url = DOWNLOAD_URL_MAIN
@@ -105,48 +133,65 @@ class ModDownloader:
             self.send_message(f"Cookie已失效,请求发生错误,前往https://www.nexusmods.com/eldenring/mods/510?tab=files")
             exit(1)
 
-    def download_and_extract_file(self, download_url, mod_info):
+    def download_and_extract_file(self, download_url, mod_fliename):
         """下载文件并解压。"""
-        if download_url:
-            try:
-                file_response = self.session.get(download_url, stream=True)
-                file_response.raise_for_status()
-                file_name = f"{mod_info}.zip"
-                save_path = os.path.join(self.local_path, file_name)
-                with open(save_path, 'wb') as file:
-                    for chunk in file_response.iter_content(chunk_size=65536):
-                        if chunk:
-                            file.write(chunk)
-                print(f"文件已成功下载至 {save_path}。")
-                self.send_message("文件下载完成")
-
-                # 解压文件
-                extract_path = os.path.join(self.local_path, f"{mod_info}")
-                with zipfile.ZipFile(save_path, 'r') as zip_ref:
-                    zip_ref.extractall(extract_path)
-
-                # 检查解压后的文件
-                files_in_zip = zip_ref.namelist()
-                all_files_extracted = all(os.path.exists(os.path.join(extract_path, file_name)) and os.path.getsize(os.path.join(extract_path, file_name)) > 0 for file_name in files_in_zip)
-
-                if all_files_extracted:
-                    print(f"所有文件已成功解压至 {extract_path}。")
-                    # 将文件路径和版本号写入文本文件
-                    with open("file_path.txt", "w") as file:
-                        file.write(save_path)
-                    # 删除解压后的文件
-                    shutil.rmtree(extract_path)
-                    print(f"解压后的文件已被删除。")
-                    self.send_message("文件已校验成功")
-                    return save_path
+        try:
+            file_response = self.session.get(download_url, stream=True)
+            file_response.raise_for_status()
+            save_path = os.path.join(self.local_path, mod_fliename)
+            with open(save_path, 'wb') as file:
+                for chunk in file_response.iter_content(chunk_size=65536):
+                    if chunk:
+                        file.write(chunk)
+            print(f"文件已成功下载至 {save_path}。")
+            self.send_message("文件下载完成")
+            match = re.match(r'^(.*?)(\.[^.]+)$', mod_fliename)
+            if match:
+                base_name = match.group(1)
+                extension = match.group(2)
+                # 根据扩展名选择解压方法
+                extract_path = os.path.join(self.local_path, f"{base_name}")
+                if extension == ".zip":
+                    with zipfile.ZipFile(save_path, 'r') as zip_ref:
+                        zip_ref.extractall(extract_path)
+                elif extension == ".rar":
+                    os.makedirs(extract_path, exist_ok=True)
+                    pyunpack.Archive(save_path).extractall(extract_path)
+                elif extension == ".7z":
+                    os.makedirs(extract_path, exist_ok=True)
+                    with py7zr.SevenZipFile(save_path, mode='r') as archive:
+                        archive.extractall(extract_path)
                 else:
-                    print(f"部分文件未正确从 {save_path} 中解压。")
-                    self.send_message(f"部分文件未正确从 {save_path} 中解压。")
-            except Exception as e:
-                print(f"文件处理过程中发生错误: {e}")
-                self.send_message(f"文件处理过程中发生错误: {e}")
-                exit(1)
-            return False
+                    print(f"不支持的压缩格式: {extension}")
+                    self.send_message(f"不支持的压缩格式: {extension}")
+                    return False
+            else:
+                print(f"无法解析文件名: {mod_fliename}")
+                self.send_message(f"无法解析文件名: {mod_fliename}")
+                return False
+
+            # 检查解压后的文件
+            files_in_zip = zip_ref.namelist()
+            all_files_extracted = all(os.path.exists(os.path.join(extract_path, file_name)) and os.path.getsize(os.path.join(extract_path, file_name)) > 0 for file_name in files_in_zip)
+
+            if all_files_extracted:
+                print(f"所有文件已成功解压至 {extract_path}。")
+                # 将文件路径和版本号写入文本文件
+                with open("file_path.txt", "w") as file:
+                    file.write(save_path)
+                # 删除解压后的文件
+                shutil.rmtree(extract_path)
+                print(f"解压后的文件已被删除。")
+                self.send_message("文件已校验成功")
+                return save_path
+            else:
+                print(f"部分文件未正确从 {save_path} 中解压。")
+                self.send_message(f"部分文件未正确从 {save_path} 中解压。")
+        except Exception as e:
+            print(f"文件处理过程中发生错误: {e}")
+            self.send_message(f"文件处理过程中发生错误: {e}")
+            exit(1)
+        return False
 
     def check_version_before_download(self, mod_info):
 
@@ -272,6 +317,7 @@ class ModDownloader:
                 print(f"发送消息到VX_BOT失败: {response.text}")
         except Exception as e:
             print(f"发送消息到VX_Bot时出错: {e}")
+            
     def run(self, url_main):
         """运行下载流程。"""
         self.session = self.create_requests_session()
@@ -282,6 +328,8 @@ class ModDownloader:
         print(f"模组版本号: {version_number}")
         print(f"文件 ID: {file_id}")
         mod_info = f"{mod_title}_v{version_number}"
+        url_fliename = f"{url_main}&file_id={file_id}"
+        mod_fliename = self.get_mod_fliename(url_fliename)
 
         # 检查版本
         if self.check_version_before_download(mod_info):
@@ -290,7 +338,7 @@ class ModDownloader:
             print(f"下载链接: {download_url}")
 
             # 下载并解压文件
-            file_path = self.download_and_extract_file(download_url, mod_info)
+            file_path = self.download_and_extract_file(download_url, mod_fliename)
             if file_path:
                 print("下载并解压文件成功。")
                 # 创建 GitHub 发行版
