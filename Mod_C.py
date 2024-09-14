@@ -151,16 +151,22 @@ class ModDownloader:
                 extension = match.group(2)
                 # 根据扩展名选择解压方法
                 extract_path = os.path.join(self.local_path, f"{base_name}")
+                os.makedirs(extract_path, exist_ok=True)
                 if extension == ".zip":
                     with zipfile.ZipFile(save_path, 'r') as zip_ref:
                         zip_ref.extractall(extract_path)
+                        files_in_zip = zip_ref.namelist()
+                        all_files_extracted = all(os.path.exists(os.path.join(extract_path, file_name)) and os.path.getsize(
+                            os.path.join(extract_path, file_name)) > 0 for file_name in files_in_zip)
                 elif extension == ".rar":
-                    os.makedirs(extract_path, exist_ok=True)
                     pyunpack.Archive(save_path).extractall(extract_path)
+                    all_files_extracted = True
                 elif extension == ".7z":
-                    os.makedirs(extract_path, exist_ok=True)
                     with py7zr.SevenZipFile(save_path, mode='r') as archive:
                         archive.extractall(extract_path)
+                        files_in_7z = archive.getnames()
+                        all_files_extracted = all(os.path.exists(os.path.join(extract_path, file_name)) and os.path.getsize(
+                            os.path.join(extract_path, file_name)) > 0 for file_name in files_in_7z)
                 else:
                     print(f"不支持的压缩格式: {extension}")
                     self.send_message(f"不支持的压缩格式: {extension}")
@@ -169,10 +175,6 @@ class ModDownloader:
                 print(f"无法解析文件名: {mod_fliename}")
                 self.send_message(f"无法解析文件名: {mod_fliename}")
                 return False
-
-            # 检查解压后的文件
-            files_in_zip = zip_ref.namelist()
-            all_files_extracted = all(os.path.exists(os.path.join(extract_path, file_name)) and os.path.getsize(os.path.join(extract_path, file_name)) > 0 for file_name in files_in_zip)
 
             if all_files_extracted:
                 print(f"所有文件已成功解压至 {extract_path}。")
